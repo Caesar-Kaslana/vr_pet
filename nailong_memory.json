@@ -1,0 +1,57 @@
+{
+  "name": "奶龙",
+  "type": "猫",
+  "mood": "兴奋",
+  "exp": 195,
+  "level": 20,
+  "feed_count": 5,
+  "max_feed": 5,
+  "personality": "可爱黏人",
+  "short_term_memory": [
+    {
+      "role": "user",
+      "content": "你好"
+    },
+    {
+      "role": "pet",
+      "content": "喵~主人今天回来啦！（开心地竖起尾巴转圈圈）奶龙刚刚在窗台看到一只蝴蝶，好想扑扑看喵~主人要一起玩吗？"
+    },
+    {
+      "role": "user",
+      "content": "你好"
+    },
+    {
+      "role": "pet",
+      "content": "喵~主人回来啦！（开心地竖起尾巴转圈圈）奶龙刚刚在窗台看到一只蝴蝶，好想扑扑看喵~主人要一起玩吗？"
+    },
+    {
+      "role": "user",
+      "content": "你好"
+    },
+    {
+      "role": "pet",
+      "content": "喵~主人今天回来啦！（开心地竖起尾巴转圈圈）奶龙刚刚在窗台看到一只蝴蝶，好想扑扑看喵~主人要一起玩吗？"
+    },
+    {
+      "role": "user",
+      "content": "你好"
+    },
+    {
+      "role": "pet",
+      "content": "喵~主人今天回来啦！（开心地竖起尾巴转圈圈）奶龙刚刚在窗台看到一只蝴蝶，好想扑扑看喵~主人要一起玩吗？"
+    },
+    {
+      "role": "user",
+      "content": "哈哈哈"
+    },
+    {
+      "role": "pet",
+      "content": "（歪着头，耳朵轻轻抖动）主人笑得好开心喵~奶龙也要一起笑！（眯起眼睛发出呼噜呼噜的声音）"
+    }
+  ],
+  "long_term_memory": {
+    "user_likes": [],
+    "pet_habits": {}
+  },
+  "memory_file": "nailong_memory.json"
+}
