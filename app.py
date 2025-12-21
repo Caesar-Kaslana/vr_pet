@@ -1,24 +1,38 @@
-# app.py
+"""
+app.py
+🐾 AI 虚拟宠物应用主程序
+
+功能说明：
+- 基于 Gradio 构建 Web UI 的虚拟宠物聊天应用
+- 支持宠物聊天、情绪变化、喂食互动
+- 集成 DeepSeek 大模型进行对话生成
+- 使用 SerpAPI 进行联网搜索增强回复
+- 支持聊天记录的导入与导出
+"""
+
 import os
 import json
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
-load_dotenv()
 
 import gradio as gr
 from pet import VirtualPet
 from openai import OpenAI
 
-# API
+# 环境变量加载
+load_dotenv()
+
+# DEEPSEEK API
 client = OpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com"
 )
 
+# SerpAPI Key（用于联网搜索）
 SERP_API_KEY = os.getenv("SERPAPI_API_KEY")
 
-# 宠物
+# 创建虚拟宠物实例
 pet = VirtualPet(pet_type="猫")
 
 # 搜索
@@ -37,14 +51,17 @@ def web_search(query):
             timeout=10
         )
         data = r.json()
+        
+        # 提取搜索结果摘要
         results = []
         for item in data.get("organic_results", []):
             results.append(f"{item.get('title','')}: {item.get('snippet','')}")
         return "\n".join(results[:3])
     except Exception:
+        # 网络异常或解析失败时兜底
         return ""
 
-# 表情 & 心情颜色 
+# 宠物表情图片映射
 def get_pet_image():
     return {
         "开心": "images/happy.png",
@@ -56,6 +73,7 @@ def get_pet_image():
         "害怕": "images/scared.png"
     }.get(pet.mood, "images/neutral.png")
 
+# 根据宠物情绪返回聊天背景颜色
 def get_mood_color():
     return {
         "开心": "#FFF0F5",
@@ -101,12 +119,27 @@ def build_chat_bubble(history):
     </div>
     """
 
-# 核心逻辑 
+# 核心聊天逻辑 
 def chat_with_pet(user_input, pet_type, action, food_type, chat_history):
+    """
+    处理用户与虚拟宠物的所有交互逻辑。
+
+    参数：
+        user_input (str): 用户输入内容
+        pet_type (str): 宠物类型（猫 / 狗）
+        action (str): 当前操作类型（聊天 / 喂食 / 情绪）
+        food_type (str): 喂食的食物类型
+        chat_history (list): 聊天历史状态
+
+    返回：
+        tuple: (聊天HTML, 宠物图片, 宠物状态, 更新后的历史, 清空输入框)
+    """
+    # 更新宠物类型和性格
     pet.type = pet_type
     pet.personality = pet.set_personality()
     today = datetime.now().strftime("%Y年%m月%d日")
 
+    # 情绪演示按钮
     if action == "情绪":
         pet.update_mood(user_input)
         chat_history.append({
@@ -114,19 +147,27 @@ def chat_with_pet(user_input, pet_type, action, food_type, chat_history):
             "content": f"奶龙现在是【{pet.mood}】心情～"
         })
 
+    # 喂食
     elif action == "喂食":
         msg = pet.feed_pet(food_type)
         chat_history.append({"role": "pet", "content": msg})
 
+    # 正常聊天
     elif user_input.strip():
+        # 记录用户输入
         chat_history.append({"role": "user", "content": user_input})
 
+        # 分析用户情绪并更新宠物心情
         emotion = pet.analyze_user_emotion(user_input)
         pet.update_mood(emotion)
 
+        # 判断是否需要联网搜索
         search_result = web_search(user_input) if pet.need_search(user_input) else ""
+        
+        # 构建系统提示词（包含日期 & 搜索结果）
         system_prompt = pet.build_system_prompt(today, search_result)
 
+        # 调用 DeepSeek 模型生成回复
         resp = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
@@ -136,6 +177,8 @@ def chat_with_pet(user_input, pet_type, action, food_type, chat_history):
         )
 
         reply = resp.choices[0].message.content.strip()
+        
+        # 写入短期记忆
         pet.update_short_term_memory(user_input, reply)
         chat_history.append({"role": "pet", "content": reply})
 
@@ -164,7 +207,7 @@ def import_chat(file):
     html = build_chat_bubble(history)
     return html, get_pet_image(), pet.get_status(), history, ""
 
-# UI 
+# Gradio UI 
 with gr.Blocks() as iface:
     gr.Markdown("<h1 style='text-align:center;color:#FF69B4'>🐾 奶龙 AI 虚拟宠物 🐾</h1>")
 
@@ -197,6 +240,7 @@ with gr.Blocks() as iface:
                     outputs=[chat_output, pet_img, pet_status, chat_history, txt_input]
                 )
 
+    # 发送消息
     btn_send.click(
         chat_with_pet,
         inputs=[txt_input, pet_selector, gr.State("聊天"), food_selector, chat_history],
@@ -209,17 +253,20 @@ with gr.Blocks() as iface:
         outputs=[chat_output, pet_img, pet_status, chat_history, txt_input]
     )
 
+    # 喂食按钮
     btn_feed.click(
         chat_with_pet,
         inputs=[gr.State(""), pet_selector, gr.State("喂食"), food_selector, chat_history],
         outputs=[chat_output, pet_img, pet_status, chat_history, txt_input]
     )
 
+    # 清空聊天
     btn_clear.click(
         clear_chat,
         outputs=[chat_output, pet_img, pet_status, chat_history, txt_input]
     )
 
+    # 导出 / 导入
     btn_export.click(
         export_chat,
         inputs=[chat_history],
